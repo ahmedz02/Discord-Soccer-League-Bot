@@ -1,0 +1,92 @@
+import discord
+from discord.ext import commands
+import json
+
+# Bot setup
+intents = discord.Intents.default()
+intents.message_content = True  # Only enable message content intent
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# Initialize roster data structure
+ROSTER_SIZE = 10
+roster = []
+
+# Save roster to file
+
+
+def save_roster():
+    with open('roster.json', 'w') as f:
+        json.dump(roster, f)
+
+# Load roster from file
+
+
+def load_roster():
+    try:
+        with open('roster.json', 'r') as f:
+            global roster
+            roster = json.load(f)
+    except FileNotFoundError:
+        # If file doesn't exist, create it with an empty roster
+        roster = []
+        save_roster()  # This will create the initial file
+
+
+@bot.event
+async def on_ready():
+    print(f'{bot.user} has connected to Discord!')
+    load_roster()
+
+
+@bot.command(name='add')
+async def add_player(ctx, player_name):
+    """Add a player to the roster"""
+    if len(roster) >= ROSTER_SIZE:
+        await ctx.send("Roster is full! Remove a player before adding new ones.")
+        return
+
+    if player_name in roster:
+        await ctx.send(f"{player_name} is already in the roster!")
+        return
+
+    roster.append(player_name)
+    save_roster()
+    await ctx.send(f"Added {player_name} to the roster!")
+
+
+@bot.command(name='remove')
+async def remove_player(ctx, player_name):
+    """Remove a player from the roster"""
+    if player_name in roster:
+        roster.remove(player_name)
+        save_roster()
+        await ctx.send(f"Removed {player_name} from the roster!")
+    else:
+        await ctx.send(f"{player_name} is not in the roster!")
+
+
+@bot.command(name='roster')
+async def show_roster(ctx):
+    """Display the current roster"""
+    if not roster:
+        await ctx.send("The roster is empty!")
+        return
+
+    roster_message = "Current Roster:\n"
+    for i, player in enumerate(roster, 1):
+        roster_message += f"{i}. {player}\n"
+
+    roster_message += f"\nTotal players: {len(roster)}/{ROSTER_SIZE}"
+    await ctx.send(roster_message)
+
+
+@bot.command(name='clear')
+async def clear_roster(ctx):
+    """Clear the entire roster"""
+    global roster
+    roster = []
+    save_roster()
+    await ctx.send("Roster has been cleared!")
+
+# Replace 'YOUR_BOT_TOKEN' with your actual Discord bot token
+bot.run('MTMzMzY1NTYzMDQxMzgyNDA2MA.G3im8q.o846YJwU43Xv70ONCwPso-4nK0IFYFrR3WIp_Y')
